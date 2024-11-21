@@ -1,0 +1,172 @@
+import pygame
+import tkinter as tk
+from tkinter import ttk
+from PIL import Image, ImageTk
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+# Dimensiones de la ventana de simulación
+ANCHO_SIMULACION, ALTO_SIMULACION = 800, 400
+
+# Colores
+BLANCO = (255, 255, 255)
+
+# Configuración de Pygame
+pygame.init()
+ventana_simulacion = pygame.Surface((ANCHO_SIMULACION, ALTO_SIMULACION))
+
+# Cargar las imágenes de los autos
+imagen_auto1 = pygame.image.load("auto1.png")
+imagen_auto2 = pygame.image.load("auto1.png")
+
+# Escalar las imágenes para que sean del tamaño adecuado
+imagen_auto1 = pygame.transform.scale(imagen_auto1, (50, 30))
+imagen_auto2 = pygame.transform.scale(imagen_auto2, (50, 30))
+
+# Configuración de la ventana principal (Tkinter)
+root = tk.Tk()
+root.title("Simulación de Colisiones")
+
+# Variables para los parámetros
+masa1 = tk.DoubleVar(value=2.0)
+masa2 = tk.DoubleVar(value=3.0)
+velocidad1 = tk.DoubleVar(value=5.0)
+velocidad2 = tk.DoubleVar(value=-3.0)
+
+# Gráficos de energía
+fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(5, 5))
+ax1.set_title("Energía Cinética Auto 1")
+ax1.set_xlabel("Tiempo")
+ax1.set_ylabel("Energía (J)")
+ax2.set_title("Energía Cinética Auto 2")
+ax2.set_xlabel("Tiempo")
+ax2.set_ylabel("Energía (J)")
+
+# Variables para almacenar la energía a lo largo del tiempo
+tiempo = []
+energia_auto1 = []
+energia_auto2 = []
+
+# Canvas de matplotlib dentro de Tkinter
+canvas_fig = FigureCanvasTkAgg(fig, master=root)
+canvas_fig.get_tk_widget().grid(row=1, column=0, columnspan=2, pady=10)
+
+# Función para iniciar la simulación
+def iniciar_simulacion():
+    global particula1, particula2, tiempo, energia_auto1, energia_auto2
+    particula1 = {"x": 200, "y": ALTO_SIMULACION // 2, "masa": masa1.get(), "velocidad_x": velocidad1.get()}
+    particula2 = {"x": 600, "y": ALTO_SIMULACION // 2, "masa": masa2.get(), "velocidad_x": velocidad2.get()}
+    # Resetear datos de gráficos
+    tiempo = []
+    energia_auto1 = []
+    energia_auto2 = []
+    simulacion()
+
+# Configuración de la sección de parámetros
+frame_config = ttk.LabelFrame(root, text="Parámetros")
+frame_config.grid(row=0, column=0, padx=10, pady=10)
+
+ttk.Label(frame_config, text="Masa 1 (kg):").grid(row=0, column=0, sticky="w")
+ttk.Entry(frame_config, textvariable=masa1).grid(row=0, column=1)
+
+ttk.Label(frame_config, text="Velocidad 1 (m/s):").grid(row=1, column=0, sticky="w")
+ttk.Entry(frame_config, textvariable=velocidad1).grid(row=1, column=1)
+
+ttk.Label(frame_config, text="Masa 2 (kg):").grid(row=2, column=0, sticky="w")
+ttk.Entry(frame_config, textvariable=masa2).grid(row=2, column=1)
+
+ttk.Label(frame_config, text="Velocidad 2 (m/s):").grid(row=3, column=0, sticky="w")
+ttk.Entry(frame_config, textvariable=velocidad2).grid(row=3, column=1)
+
+ttk.Button(frame_config, text="Iniciar Simulación", command=iniciar_simulacion).grid(row=4, column=0, columnspan=2, pady=10)
+
+# Zona de simulación
+frame_simulacion = ttk.LabelFrame(root, text="Simulación")
+frame_simulacion.grid(row=0, column=1, padx=10, pady=10)
+
+# Contenedor de Pygame dentro de Tkinter
+canvas_simulacion = tk.Canvas(frame_simulacion, width=ANCHO_SIMULACION, height=ALTO_SIMULACION, bg="white")
+canvas_simulacion.pack()
+
+# Función para la simulación con Pygame
+def simulacion():
+    global particula1, particula2, tiempo, energia_auto1, energia_auto2
+    reloj = pygame.time.Clock()
+    corriendo = True
+    t = 0  # Tiempo inicial
+
+    while corriendo:
+        ventana_simulacion.fill(BLANCO)
+
+        # Mover partículas si no están detenidas
+        if particula1["velocidad_x"] != 0:
+            particula1["x"] += particula1["velocidad_x"]
+        if particula2["velocidad_x"] != 0:
+            particula2["x"] += particula2["velocidad_x"]
+
+        # Detectar colisión con los bordes y detener ambos vehículos si uno de ellos colisiona
+        if particula1["x"] <= 0 or particula1["x"] + 50 >= ANCHO_SIMULACION or particula2["x"] <= 0 or particula2["x"] + 50 >= ANCHO_SIMULACION:
+            particula1["velocidad_x"] = 0
+            particula2["velocidad_x"] = 0
+
+        # Detectar colisión entre partículas y actualizar velocidades
+        if abs(particula1["x"] - particula2["x"]) <= 50 and particula1["velocidad_x"] != 0 and particula2["velocidad_x"] != 0:
+            v1 = particula1["velocidad_x"]
+            v2 = particula2["velocidad_x"]
+            m1 = particula1["masa"]
+            m2 = particula2["masa"]
+
+            # Fórmulas de colisión elástica
+            particula1["velocidad_x"] = ((m1 - m2) * v1 + 2 * m2 * v2) / (m1 + m2)
+            particula2["velocidad_x"] = ((m2 - m1) * v2 + 2 * m1 * v1) / (m1 + m2)
+
+        # Dibujar partículas (autos)
+        ventana_simulacion.blit(imagen_auto1, (int(particula1["x"]), int(particula1["y"])))
+        ventana_simulacion.blit(imagen_auto2, (int(particula2["x"]), int(particula2["y"])))
+
+        # Actualizar energías cinéticas si los autos se están moviendo
+        if particula1["velocidad_x"] != 0 or particula2["velocidad_x"] != 0:
+            energia1 = 0.5 * particula1["masa"] * (particula1["velocidad_x"] ** 2)
+            energia2 = 0.5 * particula2["masa"] * (particula2["velocidad_x"] ** 2)
+            tiempo.append(t)
+            energia_auto1.append(energia1)
+            energia_auto2.append(energia2)
+            t += 1
+
+            # Actualizar gráficos
+            ax1.clear()
+            ax2.clear()
+            ax1.plot(tiempo, energia_auto1, color='blue')
+            ax2.plot(tiempo, energia_auto2, color='red')
+            ax1.set_title("Energía Cinética Auto 1")
+            ax1.set_xlabel("Tiempo")
+            ax1.set_ylabel("Energía (J)")
+            ax2.set_title("Energía Cinética Auto 2")
+            ax2.set_xlabel("Tiempo")
+            ax2.set_ylabel("Energía (J)")
+            canvas_fig.draw()
+
+        # Convertir superficie de Pygame a imagen de PIL
+        imagen_pygame = pygame.surfarray.array3d(ventana_simulacion)
+        imagen_pil = Image.fromarray(imagen_pygame.swapaxes(0, 1))
+        imagen_tk = ImageTk.PhotoImage(imagen_pil)
+
+        # Renderizar imagen en el canvas de Tkinter
+        canvas_simulacion.create_image(0, 0, anchor="nw", image=imagen_tk)
+        canvas_simulacion.image = imagen_tk
+
+        # Salir del bucle si ambos autos están detenidos
+        if particula1["velocidad_x"] == 0 and particula2["velocidad_x"] == 0:
+            corriendo = False
+
+        # Salir del bucle al cerrar la ventana
+        for evento in pygame.event.get():
+            if evento.type == pygame.QUIT:
+                corriendo = False
+
+        root.update_idletasks()
+        root.update()
+        reloj.tick(60)
+
+# Iniciar el loop principal de Tkinter
+root.mainloop()
