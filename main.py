@@ -4,6 +4,7 @@ from tkinter import ttk
 from PIL import Image, ImageTk
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import math
 
 # Dimensiones de la ventana de simulación
 ANCHO_SIMULACION, ALTO_SIMULACION = 800, 400
@@ -33,6 +34,13 @@ masa2 = tk.DoubleVar(value=3.0)
 velocidad1 = tk.DoubleVar(value=5.0)
 velocidad2 = tk.DoubleVar(value=-3.0)
 tipo_colision = tk.StringVar(value="elastica")  # Valor por defecto: "elastica"
+tipo_movimiento = tk.StringVar(value="1D")  # Movimiento 1D o 2D
+coef_roce = tk.DoubleVar(value=0.05)  # Coeficiente de roce
+gravedad = tk.DoubleVar(value=0)  # Gravedad para movimiento 2D
+
+# Variables para el movimiento en 2D
+angulo1 = tk.DoubleVar(value=0.0)  # Ángulo de lanzamiento en grados para auto 1
+angulo2 = tk.DoubleVar(value=0.0)  # Ángulo de lanzamiento en grados para auto 2
 
 # Gráficos de energía
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4))  # Configuración para que estén uno al lado del otro
@@ -50,41 +58,97 @@ energia_auto2 = []
 
 # Canvas de matplotlib dentro de Tkinter
 canvas_fig = FigureCanvasTkAgg(fig, master=root)
-canvas_fig.get_tk_widget().grid(row=2, column=0, columnspan=2, pady=10)
+canvas_fig.get_tk_widget().grid(row=4, column=0, columnspan=2, pady=10)
+
+
+# Funciones para habilitar o deshabilitar parámetros según el tipo de movimiento
+def actualizar_parametros_movimiento():
+    if tipo_movimiento.get() == "2D":
+        frame_2d_params.grid(row=1, column=1, padx=10, pady=10)
+        angulo1.set(45.0)
+        angulo2.set(45.0)
+        gravedad.set(0.5)
+    else:
+        frame_2d_params.grid_forget()
+        angulo1.set(0.0)
+        angulo2.set(0.0)
+        gravedad.set(0.0)
+
 
 # Función para iniciar la simulación
 def iniciar_simulacion():
     global particula1, particula2, tiempo, energia_auto1, energia_auto2
-    particula1 = {"x": 200, "y": ALTO_SIMULACION // 2, "masa": masa1.get(), "velocidad_x": velocidad1.get()}
-    particula2 = {"x": 600, "y": ALTO_SIMULACION // 2, "masa": masa2.get(), "velocidad_x": velocidad2.get()}
+    particula1 = {"x": 200, "y": ALTO_SIMULACION // 2, "masa": masa1.get(), "velocidad_x": velocidad1.get(),
+                  "velocidad_y": 0}
+    particula2 = {"x": 600, "y": ALTO_SIMULACION // 2, "masa": masa2.get(), "velocidad_x": velocidad2.get(),
+                  "velocidad_y": 0}
+
     # Resetear datos de gráficos
     tiempo = []
     energia_auto1 = []
     energia_auto2 = []
+
+    # Configurar velocidades iniciales si es movimiento 2D
+    if tipo_movimiento.get() == "2D":
+        angulo_radianes1 = math.radians(angulo1.get())
+        angulo_radianes2 = math.radians(angulo2.get())
+        particula1["velocidad_x"] = velocidad1.get() * math.cos(angulo_radianes1)
+        particula1["velocidad_y"] = -velocidad1.get() * math.sin(angulo_radianes1)
+        particula2["velocidad_x"] = velocidad2.get() * math.cos(angulo_radianes2)
+        particula2["velocidad_y"] = -velocidad2.get() * math.sin(angulo_radianes2)
+
     simulacion()
+
 
 # Configuración de la sección de parámetros
 frame_config = ttk.LabelFrame(root, text="Parámetros")
 frame_config.grid(row=0, column=0, padx=10, pady=10)
 
-ttk.Label(frame_config, text="Masa 1 (kg):").grid(row=0, column=0, sticky="w")
-ttk.Entry(frame_config, textvariable=masa1).grid(row=0, column=1)
+# Selección de tipo de movimiento
+ttk.Label(frame_config, text="Tipo de movimiento:").grid(row=0, column=0, sticky="w")
+ttk.Radiobutton(frame_config, text="1D", variable=tipo_movimiento, value="1D",
+                command=actualizar_parametros_movimiento).grid(row=0, column=1, sticky="w")
+ttk.Radiobutton(frame_config, text="2D", variable=tipo_movimiento, value="2D",
+                command=actualizar_parametros_movimiento).grid(row=1, column=1, sticky="w")
 
-ttk.Label(frame_config, text="Velocidad 1 (m/s):").grid(row=1, column=0, sticky="w")
-ttk.Entry(frame_config, textvariable=velocidad1).grid(row=1, column=1)
+# Parámetros para movimiento en 1D
+ttk.Label(frame_config, text="Masa 1 (kg):").grid(row=2, column=0, sticky="w")
+ttk.Entry(frame_config, textvariable=masa1).grid(row=2, column=1)
 
-ttk.Label(frame_config, text="Masa 2 (kg):").grid(row=2, column=0, sticky="w")
-ttk.Entry(frame_config, textvariable=masa2).grid(row=2, column=1)
+ttk.Label(frame_config, text="Velocidad 1 (m/s):").grid(row=3, column=0, sticky="w")
+ttk.Entry(frame_config, textvariable=velocidad1).grid(row=3, column=1)
 
-ttk.Label(frame_config, text="Velocidad 2 (m/s):").grid(row=3, column=0, sticky="w")
-ttk.Entry(frame_config, textvariable=velocidad2).grid(row=3, column=1)
+ttk.Label(frame_config, text="Masa 2 (kg):").grid(row=4, column=0, sticky="w")
+ttk.Entry(frame_config, textvariable=masa2).grid(row=4, column=1)
+
+ttk.Label(frame_config, text="Velocidad 2 (m/s):").grid(row=5, column=0, sticky="w")
+ttk.Entry(frame_config, textvariable=velocidad2).grid(row=5, column=1)
 
 # Selector de tipo de colisión
-ttk.Label(frame_config, text="Tipo de colisión:").grid(row=4, column=0, sticky="w")
-tk.Radiobutton(frame_config, text="Elástica", variable=tipo_colision, value="elastica").grid(row=4, column=1, sticky="w")
-tk.Radiobutton(frame_config, text="Inelástica", variable=tipo_colision, value="inelastica").grid(row=5, column=1, sticky="w")
+ttk.Label(frame_config, text="Tipo de colisión:").grid(row=6, column=0, sticky="w")
+tk.Radiobutton(frame_config, text="Elástica", variable=tipo_colision, value="elastica").grid(row=6, column=1,
+                                                                                             sticky="w")
+tk.Radiobutton(frame_config, text="Inelástica", variable=tipo_colision, value="inelastica").grid(row=7, column=1,
+                                                                                                 sticky="w")
 
-ttk.Button(frame_config, text="Iniciar Simulación", command=iniciar_simulacion).grid(row=6, column=0, columnspan=2, pady=10)
+# Coeficiente de roce
+ttk.Label(frame_config, text="Coeficiente de roce:").grid(row=8, column=0, sticky="w")
+ttk.Entry(frame_config, textvariable=coef_roce).grid(row=8, column=1)
+
+# Botón para iniciar la simulación
+ttk.Button(frame_config, text="Iniciar Simulación", command=iniciar_simulacion).grid(row=9, column=0, columnspan=2,
+                                                                                     pady=10)
+
+# Parámetros adicionales para movimiento en 2D
+frame_2d_params = ttk.LabelFrame(root, text="Parámetros Movimiento 2D")
+ttk.Label(frame_2d_params, text="Ángulo Auto 1 (grados):").grid(row=0, column=0, sticky="w")
+ttk.Entry(frame_2d_params, textvariable=angulo1).grid(row=0, column=1)
+
+ttk.Label(frame_2d_params, text="Ángulo Auto 2 (grados):").grid(row=1, column=0, sticky="w")
+ttk.Entry(frame_2d_params, textvariable=angulo2).grid(row=1, column=1)
+
+ttk.Label(frame_2d_params, text="Gravedad (m/s²):").grid(row=2, column=0, sticky="w")
+ttk.Entry(frame_2d_params, textvariable=gravedad).grid(row=2, column=1)
 
 # Zona de simulación
 frame_simulacion = ttk.LabelFrame(root, text="Simulación")
@@ -93,6 +157,7 @@ frame_simulacion.grid(row=0, column=1, padx=10, pady=10)
 # Contenedor de Pygame dentro de Tkinter
 canvas_simulacion = tk.Canvas(frame_simulacion, width=ANCHO_SIMULACION, height=ALTO_SIMULACION, bg="white")
 canvas_simulacion.pack()
+
 
 # Función para la simulación con Pygame
 def simulacion():
@@ -105,18 +170,29 @@ def simulacion():
         ventana_simulacion.fill(BLANCO)
 
         # Mover partículas si no están detenidas
-        if particula1["velocidad_x"] != 0:
+        if particula1["velocidad_x"] != 0 or particula1["velocidad_y"] != 0:
             particula1["x"] += particula1["velocidad_x"]
-        if particula2["velocidad_x"] != 0:
+            particula1["y"] += particula1["velocidad_y"]
+            particula1["velocidad_y"] += gravedad.get()  # Simular gravedad en movimiento 2D
+            particula1["velocidad_x"] -= coef_roce.get() * particula1["velocidad_x"]  # Aplicar roce en X
+
+        if particula2["velocidad_x"] != 0 or particula2["velocidad_y"] != 0:
             particula2["x"] += particula2["velocidad_x"]
+            particula2["y"] += particula2["velocidad_y"]
+            particula2["velocidad_y"] += gravedad.get()  # Simular gravedad en movimiento 2D
+            particula2["velocidad_x"] -= coef_roce.get() * particula2["velocidad_x"]  # Aplicar roce en X
 
         # Detectar colisión con los bordes y detener ambos vehículos si uno de ellos colisiona
-        if particula1["x"] <= 0 or particula1["x"] + 50 >= ANCHO_SIMULACION or particula2["x"] <= 0 or particula2["x"] + 50 >= ANCHO_SIMULACION:
+        if particula1["x"] <= 0 or particula1["x"] + 50 >= ANCHO_SIMULACION or particula1["y"] + 30 >= ALTO_SIMULACION:
             particula1["velocidad_x"] = 0
+            particula1["velocidad_y"] = 0
+        if particula2["x"] <= 0 or particula2["x"] + 50 >= ANCHO_SIMULACION or particula2["y"] + 30 >= ALTO_SIMULACION:
             particula2["velocidad_x"] = 0
+            particula2["velocidad_y"] = 0
 
         # Detectar colisión entre partículas y actualizar velocidades según el tipo de colisión
-        if abs(particula1["x"] - particula2["x"]) <= 50 and particula1["velocidad_x"] != 0 and particula2["velocidad_x"] != 0:
+        if abs(particula1["x"] - particula2["x"]) <= 50 and particula1["velocidad_x"] != 0 and particula2[
+            "velocidad_x"] != 0:
             v1 = particula1["velocidad_x"]
             v2 = particula2["velocidad_x"]
             m1 = particula1["masa"]
@@ -179,6 +255,7 @@ def simulacion():
         root.update_idletasks()
         root.update()
         reloj.tick(60)
+
 
 # Iniciar el loop principal de Tkinter
 root.mainloop()
