@@ -32,6 +32,7 @@ masa1 = tk.DoubleVar(value=2.0)
 masa2 = tk.DoubleVar(value=3.0)
 velocidad1 = tk.DoubleVar(value=5.0)
 velocidad2 = tk.DoubleVar(value=-3.0)
+tipo_colision = tk.StringVar(value="elastica")  # Valor por defecto: "elastica"
 
 # Gráficos de energía
 fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(5, 5))
@@ -49,7 +50,7 @@ energia_auto2 = []
 
 # Canvas de matplotlib dentro de Tkinter
 canvas_fig = FigureCanvasTkAgg(fig, master=root)
-canvas_fig.get_tk_widget().grid(row=1, column=0, columnspan=2, pady=10)
+canvas_fig.get_tk_widget().grid(row=2, column=0, columnspan=2, pady=10)
 
 # Función para iniciar la simulación
 def iniciar_simulacion():
@@ -78,7 +79,12 @@ ttk.Entry(frame_config, textvariable=masa2).grid(row=2, column=1)
 ttk.Label(frame_config, text="Velocidad 2 (m/s):").grid(row=3, column=0, sticky="w")
 ttk.Entry(frame_config, textvariable=velocidad2).grid(row=3, column=1)
 
-ttk.Button(frame_config, text="Iniciar Simulación", command=iniciar_simulacion).grid(row=4, column=0, columnspan=2, pady=10)
+# Selector de tipo de colisión
+ttk.Label(frame_config, text="Tipo de colisión:").grid(row=4, column=0, sticky="w")
+tk.Radiobutton(frame_config, text="Elástica", variable=tipo_colision, value="elastica").grid(row=4, column=1, sticky="w")
+tk.Radiobutton(frame_config, text="Inelástica", variable=tipo_colision, value="inelastica").grid(row=5, column=1, sticky="w")
+
+ttk.Button(frame_config, text="Iniciar Simulación", command=iniciar_simulacion).grid(row=6, column=0, columnspan=2, pady=10)
 
 # Zona de simulación
 frame_simulacion = ttk.LabelFrame(root, text="Simulación")
@@ -109,16 +115,22 @@ def simulacion():
             particula1["velocidad_x"] = 0
             particula2["velocidad_x"] = 0
 
-        # Detectar colisión entre partículas y actualizar velocidades
+        # Detectar colisión entre partículas y actualizar velocidades según el tipo de colisión
         if abs(particula1["x"] - particula2["x"]) <= 50 and particula1["velocidad_x"] != 0 and particula2["velocidad_x"] != 0:
             v1 = particula1["velocidad_x"]
             v2 = particula2["velocidad_x"]
             m1 = particula1["masa"]
             m2 = particula2["masa"]
 
-            # Fórmulas de colisión elástica
-            particula1["velocidad_x"] = ((m1 - m2) * v1 + 2 * m2 * v2) / (m1 + m2)
-            particula2["velocidad_x"] = ((m2 - m1) * v2 + 2 * m1 * v1) / (m1 + m2)
+            if tipo_colision.get() == "elastica":
+                # Colisión elástica
+                particula1["velocidad_x"] = ((m1 - m2) * v1 + 2 * m2 * v2) / (m1 + m2)
+                particula2["velocidad_x"] = ((m2 - m1) * v2 + 2 * m1 * v1) / (m1 + m2)
+            elif tipo_colision.get() == "inelastica":
+                # Colisión inelástica (se unen y comparten la velocidad)
+                velocidad_final = (m1 * v1 + m2 * v2) / (m1 + m2)
+                particula1["velocidad_x"] = velocidad_final
+                particula2["velocidad_x"] = velocidad_final
 
         # Dibujar partículas (autos)
         ventana_simulacion.blit(imagen_auto1, (int(particula1["x"]), int(particula1["y"])))
