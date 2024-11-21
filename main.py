@@ -35,7 +35,7 @@ velocidad2 = tk.DoubleVar(value=-3.0)
 tipo_colision = tk.StringVar(value="elastica")  # Valor por defecto: "elastica"
 
 # Gráficos de energía
-fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(5, 5))
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4))  # Configuración para que estén uno al lado del otro
 ax1.set_title("Energía Cinética Auto 1")
 ax1.set_xlabel("Tiempo")
 ax1.set_ylabel("Energía (J)")
