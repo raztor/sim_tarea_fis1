@@ -67,13 +67,19 @@ trayectoria_auto2 = []
 simulacion_activa = False
 pausada = False
 
+# Ticketbox para mostrar los gráficos
+mostrar_graficos = tk.BooleanVar(value=False)
+mostrar_indicadores = tk.BooleanVar(value=False)
+
 # Canvas de matplotlib dentro de Tkinter
 canvas_fig = FigureCanvasTkAgg(fig, master=root)
-canvas_fig.get_tk_widget().grid(row=6, column=0, columnspan=3, pady=10)
+if mostrar_graficos.get():
+    canvas_fig.get_tk_widget().grid(row=6, column=0, columnspan=3, pady=10)
 
 # Indicadores de estado
 frame_estado = ttk.LabelFrame(root, text="Indicadores de Estado")
-frame_estado.grid(row=7, column=0, columnspan=3, padx=10, pady=10, sticky="nsew")
+if mostrar_indicadores.get():
+    frame_estado.grid(row=7, column=0, columnspan=3, padx=10, pady=10, sticky="nsew")
 
 estado_velocidad1 = tk.StringVar(value="Velocidad Auto 1: 0.0 m/s")
 estado_velocidad2 = tk.StringVar(value="Velocidad Auto 2: 0.0 m/s")
@@ -83,12 +89,13 @@ estado_rebotes1 = tk.StringVar(value="Rebotes Auto 1: 0")
 estado_rebotes2 = tk.StringVar(value="Rebotes Auto 2: 0")
 
 # Etiquetas para los indicadores
-ttk.Label(frame_estado, textvariable=estado_velocidad1).grid(row=0, column=0, sticky="w")
-ttk.Label(frame_estado, textvariable=estado_velocidad2).grid(row=1, column=0, sticky="w")
-ttk.Label(frame_estado, textvariable=estado_energia1).grid(row=0, column=1, sticky="w")
-ttk.Label(frame_estado, textvariable=estado_energia2).grid(row=1, column=1, sticky="w")
-ttk.Label(frame_estado, textvariable=estado_rebotes1).grid(row=0, column=2, sticky="w")
-ttk.Label(frame_estado, textvariable=estado_rebotes2).grid(row=1, column=2, sticky="w")
+if mostrar_indicadores.get():
+    ttk.Label(frame_estado, textvariable=estado_velocidad1).grid(row=0, column=0, sticky="w")
+    ttk.Label(frame_estado, textvariable=estado_velocidad2).grid(row=1, column=0, sticky="w")
+    ttk.Label(frame_estado, textvariable=estado_energia1).grid(row=0, column=1, sticky="w")
+    ttk.Label(frame_estado, textvariable=estado_energia2).grid(row=1, column=1, sticky="w")
+    ttk.Label(frame_estado, textvariable=estado_rebotes1).grid(row=0, column=2, sticky="w")
+    ttk.Label(frame_estado, textvariable=estado_rebotes2).grid(row=1, column=2, sticky="w")
 
 # Funciones para habilitar o deshabilitar parámetros según el tipo de movimiento
 def actualizar_parametros_movimiento():
@@ -102,6 +109,18 @@ def actualizar_parametros_movimiento():
         angulo1.set(0.0)
         angulo2.set(0.0)
         gravedad.set(0.0)
+
+# Función para mostrar u ocultar gráficos e indicadores
+def actualizar_visualizacion():
+    if mostrar_graficos.get():
+        canvas_fig.get_tk_widget().grid(row=6, column=0, columnspan=3, pady=10)
+    else:
+        canvas_fig.get_tk_widget().grid_forget()
+
+    if mostrar_indicadores.get():
+        frame_estado.grid(row=7, column=0, columnspan=3, padx=10, pady=10, sticky="nsew")
+    else:
+        frame_estado.grid_forget()
 
 # Función para iniciar la simulación
 def iniciar_simulacion():
@@ -216,6 +235,10 @@ ttk.Entry(frame_2d_params, textvariable=angulo2).grid(row=1, column=1)
 ttk.Label(frame_2d_params, text="Gravedad (m/s²):").grid(row=2, column=0, sticky="w")
 ttk.Entry(frame_2d_params, textvariable=gravedad).grid(row=2, column=1)
 
+# Checkboxes para mostrar/ocultar gráficos e indicadores
+ttk.Checkbutton(root, text="Mostrar Gráficos", variable=mostrar_graficos, command=actualizar_visualizacion).grid(row=5, column=0, padx=10, pady=5, sticky="w")
+ttk.Checkbutton(root, text="Mostrar Indicadores", variable=mostrar_indicadores, command=actualizar_visualizacion).grid(row=5, column=1, padx=10, pady=5, sticky="w")
+
 # Zona de simulación
 frame_simulacion = ttk.LabelFrame(root, text="Simulación")
 frame_simulacion.grid(row=0, column=2, padx=10, pady=10)
@@ -279,7 +302,7 @@ def simulacion():
 
             # Detectar colisión entre partículas y actualizar velocidades según el tipo de colisión
             distancia = math.sqrt((particula1["x"] - particula2["x"]) ** 2 + (particula1["y"] - particula2["y"]) ** 2)
-            if distancia <= (math.sqrt(particula1["masa"]) + math.sqrt(particula2["masa"])):  # Tamaño de los radios según la masa
+            if distancia <= 30:  # La suma de los radios de las dos partículas (15 + 15)
                 v1_x = particula1["velocidad_x"]
                 v2_x = particula2["velocidad_x"]
                 v1_y = particula1["velocidad_y"]
@@ -302,11 +325,9 @@ def simulacion():
                     particula1["velocidad_y"] = velocidad_final_y
                     particula2["velocidad_y"] = velocidad_final_y
 
-            # Dibujar partículas (como círculos cuyo tamaño depende de la masa)
-            radio1 = int(math.sqrt(particula1["masa"]) * 5)  # Tamaño del círculo proporcional a la raíz de la masa
-            radio2 = int(math.sqrt(particula2["masa"]) * 5)
-            pygame.draw.circle(ventana_simulacion, AZUL, (int(particula1["x"]), int(particula1["y"])), radio1)
-            pygame.draw.circle(ventana_simulacion, ROJO, (int(particula2["x"]), int(particula2["y"])), radio2)
+            # Dibujar partículas (como círculos)
+            pygame.draw.circle(ventana_simulacion, AZUL, (int(particula1["x"]), int(particula1["y"])), 15)
+            pygame.draw.circle(ventana_simulacion, ROJO, (int(particula2["x"]), int(particula2["y"])), 15)
 
             # Actualizar energías cinéticas y momento lineal si los autos se están moviendo
             energia1 = 0.5 * particula1["masa"] * (particula1["velocidad_x"] ** 2 + particula1["velocidad_y"] ** 2)
