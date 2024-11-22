@@ -11,18 +11,13 @@ ANCHO_SIMULACION, ALTO_SIMULACION = 800, 400
 
 # Colores
 BLANCO = (255, 255, 255)
+NEGRO = (0, 0, 0)
+AZUL = (0, 0, 255)
+ROJO = (255, 0, 0)
 
 # Configuración de Pygame
 pygame.init()
 ventana_simulacion = pygame.Surface((ANCHO_SIMULACION, ALTO_SIMULACION))
-
-# Cargar las imágenes de los autos
-imagen_auto1 = pygame.image.load("auto1.png")
-imagen_auto2 = pygame.image.load("auto1.png")
-
-# Escalar las imágenes para que sean del tamaño adecuado
-imagen_auto1 = pygame.transform.scale(imagen_auto1, (50, 30))
-imagen_auto2 = pygame.transform.scale(imagen_auto2, (50, 30))
 
 # Configuración de la ventana principal (Tkinter)
 root = tk.Tk()
@@ -56,15 +51,19 @@ tiempo = []
 energia_auto1 = []
 energia_auto2 = []
 
+# Contadores de rebotes
+rebotes_auto1 = 0
+rebotes_auto2 = 0
+
 # Canvas de matplotlib dentro de Tkinter
 canvas_fig = FigureCanvasTkAgg(fig, master=root)
-canvas_fig.get_tk_widget().grid(row=4, column=0, columnspan=2, pady=10)
+canvas_fig.get_tk_widget().grid(row=5, column=0, columnspan=2, pady=10)
 
 
 # Funciones para habilitar o deshabilitar parámetros según el tipo de movimiento
 def actualizar_parametros_movimiento():
     if tipo_movimiento.get() == "2D":
-        frame_2d_params.grid(row=1, column=1, padx=10, pady=10)
+        frame_2d_params.grid(row=2, column=0, padx=10, pady=10, columnspan=2)
         angulo1.set(45.0)
         angulo2.set(45.0)
         gravedad.set(0.5)
@@ -77,16 +76,18 @@ def actualizar_parametros_movimiento():
 
 # Función para iniciar la simulación
 def iniciar_simulacion():
-    global particula1, particula2, tiempo, energia_auto1, energia_auto2
+    global particula1, particula2, tiempo, energia_auto1, energia_auto2, rebotes_auto1, rebotes_auto2
     particula1 = {"x": 200, "y": ALTO_SIMULACION // 2, "masa": masa1.get(), "velocidad_x": velocidad1.get(),
                   "velocidad_y": 0}
     particula2 = {"x": 600, "y": ALTO_SIMULACION // 2, "masa": masa2.get(), "velocidad_x": velocidad2.get(),
                   "velocidad_y": 0}
 
-    # Resetear datos de gráficos
+    # Resetear datos de gráficos y contadores de rebotes
     tiempo = []
     energia_auto1 = []
     energia_auto2 = []
+    rebotes_auto1 = 0
+    rebotes_auto2 = 0
 
     # Configurar velocidades iniciales si es movimiento 2D
     if tipo_movimiento.get() == "2D":
@@ -161,7 +162,7 @@ canvas_simulacion.pack()
 
 # Función para la simulación con Pygame
 def simulacion():
-    global particula1, particula2, tiempo, energia_auto1, energia_auto2
+    global particula1, particula2, tiempo, energia_auto1, energia_auto2, rebotes_auto1, rebotes_auto2
     reloj = pygame.time.Clock()
     corriendo = True
     t = 0  # Tiempo inicial
@@ -176,67 +177,91 @@ def simulacion():
             particula1["velocidad_y"] += gravedad.get()  # Simular gravedad en movimiento 2D
             particula1["velocidad_x"] -= coef_roce.get() * particula1["velocidad_x"]  # Aplicar roce en X
 
+            # Limitar el movimiento a los bordes de la simulación y detener por borde
+            if particula1["x"] <= 0 or particula1["x"] >= ANCHO_SIMULACION:
+                particula1["velocidad_x"] = 0
+                rebotes_auto1 += 1
+            if particula1["y"] <= 0 or particula1["y"] >= ALTO_SIMULACION:
+                particula1["velocidad_y"] = 0
+                rebotes_auto1 += 1
+
         if particula2["velocidad_x"] != 0 or particula2["velocidad_y"] != 0:
             particula2["x"] += particula2["velocidad_x"]
             particula2["y"] += particula2["velocidad_y"]
             particula2["velocidad_y"] += gravedad.get()  # Simular gravedad en movimiento 2D
             particula2["velocidad_x"] -= coef_roce.get() * particula2["velocidad_x"]  # Aplicar roce en X
 
-        # Detectar colisión con los bordes y detener ambos vehículos si uno de ellos colisiona
-        if particula1["x"] <= 0 or particula1["x"] + 50 >= ANCHO_SIMULACION or particula1["y"] + 30 >= ALTO_SIMULACION:
-            particula1["velocidad_x"] = 0
-            particula1["velocidad_y"] = 0
-        if particula2["x"] <= 0 or particula2["x"] + 50 >= ANCHO_SIMULACION or particula2["y"] + 30 >= ALTO_SIMULACION:
-            particula2["velocidad_x"] = 0
-            particula2["velocidad_y"] = 0
+            # Limitar el movimiento a los bordes de la simulación y detener por borde
+            if particula2["x"] <= 0 or particula2["x"] >= ANCHO_SIMULACION:
+                particula2["velocidad_x"] = 0
+                rebotes_auto2 += 1
+            if particula2["y"] <= 0 or particula2["y"] >= ALTO_SIMULACION:
+                particula2["velocidad_y"] = 0
+                rebotes_auto2 += 1
+
+        # Detener la simulación si cualquier partícula ha rebotado dos veces
+        if rebotes_auto1 >= 2 or rebotes_auto2 >= 2:
+            corriendo = False
 
         # Detectar colisión entre partículas y actualizar velocidades según el tipo de colisión
-        if abs(particula1["x"] - particula2["x"]) <= 50 and particula1["velocidad_x"] != 0 and particula2[
-            "velocidad_x"] != 0:
-            v1 = particula1["velocidad_x"]
-            v2 = particula2["velocidad_x"]
+        distancia = math.sqrt((particula1["x"] - particula2["x"]) ** 2 + (particula1["y"] - particula2["y"]) ** 2)
+        if distancia <= 30:  # La suma de los radios de las dos partículas (15 + 15)
+            v1_x = particula1["velocidad_x"]
+            v2_x = particula2["velocidad_x"]
+            v1_y = particula1["velocidad_y"]
+            v2_y = particula2["velocidad_y"]
             m1 = particula1["masa"]
             m2 = particula2["masa"]
 
             if tipo_colision.get() == "elastica":
-                # Colisión elástica
-                particula1["velocidad_x"] = ((m1 - m2) * v1 + 2 * m2 * v2) / (m1 + m2)
-                particula2["velocidad_x"] = ((m2 - m1) * v2 + 2 * m1 * v1) / (m1 + m2)
+                # Colisión elástica en ambas direcciones (x e y)
+                particula1["velocidad_x"] = ((m1 - m2) * v1_x + 2 * m2 * v2_x) / (m1 + m2)
+                particula2["velocidad_x"] = ((m2 - m1) * v2_x + 2 * m1 * v1_x) / (m1 + m2)
+                particula1["velocidad_y"] = ((m1 - m2) * v1_y + 2 * m2 * v2_y) / (m1 + m2)
+                particula2["velocidad_y"] = ((m2 - m1) * v2_y + 2 * m1 * v1_y) / (m1 + m2)
             elif tipo_colision.get() == "inelastica":
                 # Colisión inelástica (se unen y comparten la velocidad)
-                velocidad_final = (m1 * v1 + m2 * v2) / (m1 + m2)
-                particula1["velocidad_x"] = velocidad_final
-                particula2["velocidad_x"] = velocidad_final
+                velocidad_final_x = (m1 * v1_x + m2 * v2_x) / (m1 + m2)
+                velocidad_final_y = (m1 * v1_y + m2 * v2_y) / (m1 + m2)
+                particula1["velocidad_x"] = velocidad_final_x
+                particula2["velocidad_x"] = velocidad_final_x
+                particula1["velocidad_y"] = velocidad_final_y
+                particula2["velocidad_y"] = velocidad_final_y
 
-        # Dibujar partículas (autos)
-        ventana_simulacion.blit(imagen_auto1, (int(particula1["x"]), int(particula1["y"])))
-        ventana_simulacion.blit(imagen_auto2, (int(particula2["x"]), int(particula2["y"])))
+        # Dibujar partículas (como círculos)
+        pygame.draw.circle(ventana_simulacion, AZUL, (int(particula1["x"]), int(particula1["y"])), 15)
+        pygame.draw.circle(ventana_simulacion, ROJO, (int(particula2["x"]), int(particula2["y"])), 15)
 
         # Actualizar energías cinéticas si los autos se están moviendo
-        if particula1["velocidad_x"] != 0 or particula2["velocidad_x"] != 0:
-            energia1 = 0.5 * particula1["masa"] * (particula1["velocidad_x"] ** 2)
-            energia2 = 0.5 * particula2["masa"] * (particula2["velocidad_x"] ** 2)
-            tiempo.append(t)
-            energia_auto1.append(energia1)
-            energia_auto2.append(energia2)
-            t += 1
+        energia1 = 0.5 * particula1["masa"] * (particula1["velocidad_x"] ** 2 + particula1["velocidad_y"] ** 2)
+        energia2 = 0.5 * particula2["masa"] * (particula2["velocidad_x"] ** 2 + particula2["velocidad_y"] ** 2)
+        tiempo.append(t)
+        energia_auto1.append(energia1)
+        energia_auto2.append(energia2)
+        t += 1
 
-            # Actualizar gráficos
-            ax1.clear()
-            ax2.clear()
-            ax1.plot(tiempo, energia_auto1, color='blue')
-            ax2.plot(tiempo, energia_auto2, color='red')
-            ax1.set_title("Energía Cinética Auto 1")
-            ax1.set_xlabel("Tiempo")
-            ax1.set_ylabel("Energía (J)")
-            ax2.set_title("Energía Cinética Auto 2")
-            ax2.set_xlabel("Tiempo")
-            ax2.set_ylabel("Energía (J)")
-            canvas_fig.draw()
+        # Asegurar que las listas de energía tengan la misma longitud que el tiempo
+        while len(energia_auto1) < len(tiempo):
+            energia_auto1.append(0)
+        while len(energia_auto2) < len(tiempo):
+            energia_auto2.append(0)
+
+        # Actualizar gráficos
+        ax1.clear()
+        ax2.clear()
+        ax1.plot(tiempo, energia_auto1, color='blue')
+        ax2.plot(tiempo, energia_auto2, color='red')
+        ax1.set_title("Energía Cinética Auto 1")
+        ax1.set_xlabel("Tiempo")
+        ax1.set_ylabel("Energía (J)")
+        ax2.set_title("Energía Cinética Auto 2")
+        ax2.set_xlabel("Tiempo")
+        ax2.set_ylabel("Energía (J)")
+        canvas_fig.draw()
 
         # Convertir superficie de Pygame a imagen de PIL
         imagen_pygame = pygame.surfarray.array3d(ventana_simulacion)
-        imagen_pil = Image.fromarray(imagen_pygame.swapaxes(0, 1))
+        imagen_pil = Image.fromarray(imagen_pygame.transpose((1, 0, 2)))
         imagen_tk = ImageTk.PhotoImage(imagen_pil)
 
         # Renderizar imagen en el canvas de Tkinter
@@ -244,7 +269,7 @@ def simulacion():
         canvas_simulacion.image = imagen_tk
 
         # Salir del bucle si ambos autos están detenidos
-        if particula1["velocidad_x"] == 0 and particula2["velocidad_x"] == 0:
+        if (particula1["velocidad_x"] == 0 and particula1["velocidad_y"] == 0) and (particula2["velocidad_x"] == 0 and particula2["velocidad_y"] == 0):
             corriendo = False
 
         # Salir del bucle al cerrar la ventana
