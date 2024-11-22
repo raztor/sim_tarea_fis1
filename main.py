@@ -35,8 +35,8 @@ coef_roce = tk.DoubleVar(value=0.05)  # Coeficiente de roce
 gravedad = tk.DoubleVar(value=0)  # Gravedad para movimiento 2D
 
 # Variables para el movimiento en 2D
-angulo1 = tk.DoubleVar(value=0.0)  # Ángulo de lanzamiento en grados para auto 1
-angulo2 = tk.DoubleVar(value=0.0)  # Ángulo de lanzamiento en grados para auto 2
+angulo1 = tk.DoubleVar(value=0.0)  # Ángulo de lanzamiento en grados para particula 1
+angulo2 = tk.DoubleVar(value=0.0)  # Ángulo de lanzamiento en grados para particula 2
 
 # Gráficos de energía y momento
 fig, axs = plt.subplots(1, 2, figsize=(10, 4))  # Configuración para 1x2 gráficos lado a lado
@@ -50,18 +50,18 @@ ax2.set_ylabel("Momento (kg·m/s)")
 
 # Variables para almacenar la energía y momento a lo largo del tiempo
 tiempo = []
-energia_auto1 = []
-energia_auto2 = []
-momento_auto1 = []
-momento_auto2 = []
+energia_particula1 = []
+energia_particula2 = []
+momento_particula1 = []
+momento_particula2 = []
 
 # Contadores de rebotes
-rebotes_auto1 = 0
-rebotes_auto2 = 0
+rebotes_particula1 = 0
+rebotes_particula2 = 0
 
 # Variables para almacenar la trayectoria de las partículas
-trayectoria_auto1 = []
-trayectoria_auto2 = []
+trayectoria_particula1 = []
+trayectoria_particula2 = []
 
 # Estado de la simulación
 simulacion_activa = False
@@ -81,12 +81,12 @@ frame_estado = ttk.LabelFrame(root, text="Indicadores de Estado")
 if mostrar_indicadores.get():
     frame_estado.grid(row=7, column=0, columnspan=3, padx=10, pady=10, sticky="nsew")
 
-estado_velocidad1 = tk.StringVar(value="Velocidad Auto 1: 0.0 m/s")
-estado_velocidad2 = tk.StringVar(value="Velocidad Auto 2: 0.0 m/s")
-estado_energia1 = tk.StringVar(value="Energía Auto 1: 0.0 J")
-estado_energia2 = tk.StringVar(value="Energía Auto 2: 0.0 J")
-estado_rebotes1 = tk.StringVar(value="Rebotes Auto 1: 0")
-estado_rebotes2 = tk.StringVar(value="Rebotes Auto 2: 0")
+estado_velocidad1 = tk.StringVar(value="Velocidad particula 1: 0.0 m/s")
+estado_velocidad2 = tk.StringVar(value="Velocidad particula 2: 0.0 m/s")
+estado_energia1 = tk.StringVar(value="Energía particula 1: 0.0 J")
+estado_energia2 = tk.StringVar(value="Energía particula 2: 0.0 J")
+estado_rebotes1 = tk.StringVar(value="Rebotes particula 1: 0")
+estado_rebotes2 = tk.StringVar(value="Rebotes particula 2: 0")
 
 # Etiquetas para los indicadores
 if mostrar_indicadores.get():
@@ -124,7 +124,7 @@ def actualizar_visualizacion():
 
 # Función para iniciar la simulación
 def iniciar_simulacion():
-    global particula1, particula2, tiempo, energia_auto1, energia_auto2, momento_auto1, momento_auto2, rebotes_auto1, rebotes_auto2, trayectoria_auto1, trayectoria_auto2, simulacion_activa, pausada
+    global particula1, particula2, tiempo, energia_particula1, energia_particula2, momento_particula1, momento_particula2, rebotes_particula1, rebotes_particula2, trayectoria_particula1, trayectoria_particula2, simulacion_activa, pausada
     particula1 = {"x": 200, "y": ALTO_SIMULACION // 2, "masa": masa1.get(), "velocidad_x": velocidad1.get(),
                   "velocidad_y": 0}
     particula2 = {"x": 600, "y": ALTO_SIMULACION // 2, "masa": masa2.get(), "velocidad_x": velocidad2.get(),
@@ -132,14 +132,14 @@ def iniciar_simulacion():
 
     # Resetear datos de gráficos y contadores de rebotes
     tiempo = []
-    energia_auto1 = []
-    energia_auto2 = []
-    momento_auto1 = []
-    momento_auto2 = []
-    rebotes_auto1 = 0
-    rebotes_auto2 = 0
-    trayectoria_auto1 = [(particula1["x"], particula1["y"])]
-    trayectoria_auto2 = [(particula2["x"], particula2["y"])]
+    energia_particula1 = []
+    energia_particula2 = []
+    momento_particula1 = []
+    momento_particula2 = []
+    rebotes_particula1 = 0
+    rebotes_particula2 = 0
+    trayectoria_particula1 = [(particula1["x"], particula1["y"])]
+    trayectoria_particula2 = [(particula2["x"], particula2["y"])]
     simulacion_activa = True
     pausada = False
 
@@ -176,12 +176,12 @@ def reiniciar_simulacion():
     ax2.set_xlabel("Tiempo")
     ax2.set_ylabel("Momento (kg·m/s)")
     canvas_fig.draw()
-    estado_velocidad1.set("Velocidad Auto 1: 0.0 m/s")
-    estado_velocidad2.set("Velocidad Auto 2: 0.0 m/s")
-    estado_energia1.set("Energía Auto 1: 0.0 J")
-    estado_energia2.set("Energía Auto 2: 0.0 J")
-    estado_rebotes1.set("Rebotes Auto 1: 0")
-    estado_rebotes2.set("Rebotes Auto 2: 0")
+    estado_velocidad1.set("Velocidad particula 1: 0.0 m/s")
+    estado_velocidad2.set("Velocidad particula 2: 0.0 m/s")
+    estado_energia1.set("Energía particula 1: 0.0 J")
+    estado_energia2.set("Energía particula 2: 0.0 J")
+    estado_rebotes1.set("Rebotes particula 1: 0")
+    estado_rebotes2.set("Rebotes particula 2: 0")
 
 # Configuración de la sección de parámetros
 frame_config = ttk.LabelFrame(root, text="Parámetros")
@@ -226,10 +226,10 @@ ttk.Button(frame_config, text="Reiniciar", command=reiniciar_simulacion).grid(ro
 
 # Parámetros adicionales para movimiento en 2D
 frame_2d_params = ttk.LabelFrame(root, text="Parámetros Movimiento 2D")
-ttk.Label(frame_2d_params, text="Ángulo Auto 1 (grados):").grid(row=0, column=0, sticky="w")
+ttk.Label(frame_2d_params, text="Ángulo particula 1 (grados):").grid(row=0, column=0, sticky="w")
 ttk.Entry(frame_2d_params, textvariable=angulo1).grid(row=0, column=1)
 
-ttk.Label(frame_2d_params, text="Ángulo Auto 2 (grados):").grid(row=1, column=0, sticky="w")
+ttk.Label(frame_2d_params, text="Ángulo particula 2 (grados):").grid(row=1, column=0, sticky="w")
 ttk.Entry(frame_2d_params, textvariable=angulo2).grid(row=1, column=1)
 
 ttk.Label(frame_2d_params, text="Gravedad (m/s²):").grid(row=2, column=0, sticky="w")
@@ -249,7 +249,7 @@ canvas_simulacion.pack()
 
 # Función para la simulación con Pygame
 def simulacion():
-    global particula1, particula2, tiempo, energia_auto1, energia_auto2, momento_auto1, momento_auto2, rebotes_auto1, rebotes_auto2, trayectoria_auto1, trayectoria_auto2, simulacion_activa, pausada
+    global particula1, particula2, tiempo, energia_particula1, energia_particula2, momento_particula1, momento_particula2, rebotes_particula1, rebotes_particula2, trayectoria_particula1, trayectoria_particula2, simulacion_activa, pausada
     reloj = pygame.time.Clock()
     t = 0  # Tiempo inicial
 
@@ -258,10 +258,10 @@ def simulacion():
             ventana_simulacion.fill(BLANCO)
 
             # Dibujar la traza de las partículas
-            for i in range(1, len(trayectoria_auto1)):
-                pygame.draw.line(ventana_simulacion, GRIS, trayectoria_auto1[i - 1], trayectoria_auto1[i], 2)
-            for i in range(1, len(trayectoria_auto2)):
-                pygame.draw.line(ventana_simulacion, GRIS, trayectoria_auto2[i - 1], trayectoria_auto2[i], 2)
+            for i in range(1, len(trayectoria_particula1)):
+                pygame.draw.line(ventana_simulacion, GRIS, trayectoria_particula1[i - 1], trayectoria_particula1[i], 2)
+            for i in range(1, len(trayectoria_particula2)):
+                pygame.draw.line(ventana_simulacion, GRIS, trayectoria_particula2[i - 1], trayectoria_particula2[i], 2)
 
             # Mover partículas si no están detenidas
             if particula1["velocidad_x"] != 0 or particula1["velocidad_y"] != 0:
@@ -273,12 +273,12 @@ def simulacion():
                 # Limitar el movimiento a los bordes de la simulación y detener por borde
                 if particula1["x"] <= 0 or particula1["x"] >= ANCHO_SIMULACION:
                     particula1["velocidad_x"] = 0
-                    rebotes_auto1 += 1
+                    rebotes_particula1 += 1
                 if particula1["y"] <= 0 or particula1["y"] >= ALTO_SIMULACION:
                     particula1["velocidad_y"] = 0
-                    rebotes_auto1 += 1
+                    rebotes_particula1 += 1
 
-                trayectoria_auto1.append((particula1["x"], particula1["y"]))
+                trayectoria_particula1.append((particula1["x"], particula1["y"]))
 
             if particula2["velocidad_x"] != 0 or particula2["velocidad_y"] != 0:
                 particula2["x"] += particula2["velocidad_x"]
@@ -289,15 +289,15 @@ def simulacion():
                 # Limitar el movimiento a los bordes de la simulación y detener por borde
                 if particula2["x"] <= 0 or particula2["x"] >= ANCHO_SIMULACION:
                     particula2["velocidad_x"] = 0
-                    rebotes_auto2 += 1
+                    rebotes_particula2 += 1
                 if particula2["y"] <= 0 or particula2["y"] >= ALTO_SIMULACION:
                     particula2["velocidad_y"] = 0
-                    rebotes_auto2 += 1
+                    rebotes_particula2 += 1
 
-                trayectoria_auto2.append((particula2["x"], particula2["y"]))
+                trayectoria_particula2.append((particula2["x"], particula2["y"]))
 
             # Detener la simulación si cualquier partícula ha rebotado dos veces
-            if rebotes_auto1 >= 2 or rebotes_auto2 >= 2:
+            if rebotes_particula1 >= 2 or rebotes_particula2 >= 2:
                 simulacion_activa = False
 
             # Detectar colisión entre partículas y actualizar velocidades según el tipo de colisión
@@ -329,37 +329,37 @@ def simulacion():
             pygame.draw.circle(ventana_simulacion, AZUL, (int(particula1["x"]), int(particula1["y"])), 15)
             pygame.draw.circle(ventana_simulacion, ROJO, (int(particula2["x"]), int(particula2["y"])), 15)
 
-            # Actualizar energías cinéticas y momento lineal si los autos se están moviendo
+            # Actualizar energías cinéticas y momento lineal si los particulas se están moviendo
             energia1 = 0.5 * particula1["masa"] * (particula1["velocidad_x"] ** 2 + particula1["velocidad_y"] ** 2)
             energia2 = 0.5 * particula2["masa"] * (particula2["velocidad_x"] ** 2 + particula2["velocidad_y"] ** 2)
             momento1 = particula1["masa"] * math.sqrt(particula1["velocidad_x"] ** 2 + particula1["velocidad_y"] ** 2)
             momento2 = particula2["masa"] * math.sqrt(particula2["velocidad_x"] ** 2 + particula2["velocidad_y"] ** 2)
 
             tiempo.append(t)
-            energia_auto1.append(energia1)
-            energia_auto2.append(energia2)
-            momento_auto1.append(momento1)
-            momento_auto2.append(momento2)
+            energia_particula1.append(energia1)
+            energia_particula2.append(energia2)
+            momento_particula1.append(momento1)
+            momento_particula2.append(momento2)
             t += 1
 
             # Asegurar que las listas de energía y momento tengan la misma longitud que el tiempo
-            while len(energia_auto1) < len(tiempo):
-                energia_auto1.append(0)
-            while len(energia_auto2) < len(tiempo):
-                energia_auto2.append(0)
-            while len(momento_auto1) < len(tiempo):
-                momento_auto1.append(0)
-            while len(momento_auto2) < len(tiempo):
-                momento_auto2.append(0)
+            while len(energia_particula1) < len(tiempo):
+                energia_particula1.append(0)
+            while len(energia_particula2) < len(tiempo):
+                energia_particula2.append(0)
+            while len(momento_particula1) < len(tiempo):
+                momento_particula1.append(0)
+            while len(momento_particula2) < len(tiempo):
+                momento_particula2.append(0)
 
             # Actualizar gráficos
             ax1.clear()
             ax2.clear()
-            ax1.plot(tiempo, energia_auto1, color='blue', label='Auto 1')
-            ax1.plot(tiempo, energia_auto2, color='red', label='Auto 2')
+            ax1.plot(tiempo, energia_particula1, color='blue', label='particula 1')
+            ax1.plot(tiempo, energia_particula2, color='red', label='particula 2')
             ax1.legend()
-            ax2.plot(tiempo, momento_auto1, color='blue', label='Auto 1')
-            ax2.plot(tiempo, momento_auto2, color='red', label='Auto 2')
+            ax2.plot(tiempo, momento_particula1, color='blue', label='particula 1')
+            ax2.plot(tiempo, momento_particula2, color='red', label='particula 2')
             ax2.legend()
             ax1.set_title("Energía Cinética")
             ax1.set_xlabel("Tiempo")
@@ -370,12 +370,12 @@ def simulacion():
             canvas_fig.draw()
 
             # Actualizar indicadores de estado
-            estado_velocidad1.set(f"Velocidad Auto 1: {math.sqrt(particula1['velocidad_x'] ** 2 + particula1['velocidad_y'] ** 2):.2f} m/s")
-            estado_velocidad2.set(f"Velocidad Auto 2: {math.sqrt(particula2['velocidad_x'] ** 2 + particula2['velocidad_y'] ** 2):.2f} m/s")
-            estado_energia1.set(f"Energía Auto 1: {energia1:.2f} J")
-            estado_energia2.set(f"Energía Auto 2: {energia2:.2f} J")
-            estado_rebotes1.set(f"Rebotes Auto 1: {rebotes_auto1}")
-            estado_rebotes2.set(f"Rebotes Auto 2: {rebotes_auto2}")
+            estado_velocidad1.set(f"Velocidad particula 1: {math.sqrt(particula1['velocidad_x'] ** 2 + particula1['velocidad_y'] ** 2):.2f} m/s")
+            estado_velocidad2.set(f"Velocidad particula 2: {math.sqrt(particula2['velocidad_x'] ** 2 + particula2['velocidad_y'] ** 2):.2f} m/s")
+            estado_energia1.set(f"Energía particula 1: {energia1:.2f} J")
+            estado_energia2.set(f"Energía particula 2: {energia2:.2f} J")
+            estado_rebotes1.set(f"Rebotes particula 1: {rebotes_particula1}")
+            estado_rebotes2.set(f"Rebotes particula 2: {rebotes_particula2}")
 
             # Convertir superficie de Pygame a imagen de PIL
             imagen_pygame = pygame.surfarray.array3d(ventana_simulacion)
@@ -386,7 +386,7 @@ def simulacion():
             canvas_simulacion.create_image(0, 0, anchor="nw", image=imagen_tk)
             canvas_simulacion.image = imagen_tk
 
-            # Salir del bucle si ambos autos están detenidos
+            # Salir del bucle si ambos particulas están detenidos
             if (particula1["velocidad_x"] == 0 and particula1["velocidad_y"] == 0) and (particula2["velocidad_x"] == 0 and particula2["velocidad_y"] == 0):
                 simulacion_activa = False
 
